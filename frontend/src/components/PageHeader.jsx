@@ -1,0 +1,1 @@
+export function PageHeader({ title, subtitle, actions }) { return <header className="page-header"><div><h1>{title}</h1>{subtitle ? <p className="muted">{subtitle}</p> : null}</div>{actions ? <div className="row-actions">{actions}</div> : null}</header>; }

@@ -1,0 +1,1 @@
+export function StatCard({ label, value, hint }) { return <article className="card stat-card"><div className="muted">{label}</div><strong>{value ?? "—"}</strong>{hint ? <small className="muted">{hint}</small> : null}</article>; }

@@ -1,0 +1,2 @@
+const TONE = { COMPLETED:"success", ONLINE:"success", ACTIVE:"success", FAILED:"danger", DEAD_LETTER:"danger", OFFLINE:"danger", RUNNING:"info", CLAIMED:"info", QUEUED:"info", SCHEDULED:"warning", RETRYING:"warning", PAUSED:"warning", DRAINING:"warning", CANCELLED:"neutral" };
+export function StatusBadge({ status }) { const key = String(status || "UNKNOWN").toUpperCase(); return <span className={`badge badge-${TONE[key] || "neutral"}`}>{key.replaceAll("_", " ")}</span>; }

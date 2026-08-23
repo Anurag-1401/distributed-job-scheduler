@@ -1,0 +1,1 @@
+export const WORKER_STATUSES = ["ONLINE", "OFFLINE", "DRAINING"];
