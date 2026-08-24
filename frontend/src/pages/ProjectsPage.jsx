@@ -99,7 +99,7 @@ export function ProjectsPage() {
           </div>
         </div>
         <button className="btn" type="submit" disabled={saving}>
-          Create
+          {saving ? `Creating...` : `Create project`}
         </button>
       </form>
       {error ? <ErrorState>{error}</ErrorState> : null}

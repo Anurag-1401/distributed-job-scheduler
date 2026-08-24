@@ -38,7 +38,8 @@ async def queue_or_404(
             Project.organization_id
             == OrganizationMember.organization_id,
         )
-        .options(
+       .options(
+            joinedload(Queue.project),
             joinedload(Queue.retry_policy),
         )
         .where(
@@ -89,6 +90,7 @@ async def queue_response(
     return {
         "id": queue.id,
         "project_id": queue.project_id,
+        "project_name": queue.project.name if queue.project else None,
         "name": queue.name,
         "priority": queue.priority,
         "concurrency_limit": queue.concurrency_limit,
@@ -182,6 +184,7 @@ async def create_queue(
     result = await session.execute(
         select(Queue)
         .options(
+            joinedload(Queue.project),
             joinedload(Queue.retry_policy),
         )
         .where(Queue.id == queue.id)
@@ -252,6 +255,7 @@ async def list_queues(
             == OrganizationMember.organization_id,
         )
         .options(
+            joinedload(Queue.project),
             joinedload(Queue.retry_policy),
         )
         .where(*filters)
@@ -355,12 +359,13 @@ async def update_queue(
     await session.commit()
 
     result = await session.execute(
-        select(Queue)
-        .options(
-            joinedload(Queue.retry_policy),
-        )
-        .where(Queue.id == queue.id)
+    select(Queue)
+    .options(
+        joinedload(Queue.project),
+        joinedload(Queue.retry_policy),
     )
+    .where(Queue.id == queue.id)
+)
 
     queue = result.unique().scalar_one()
 
@@ -391,6 +396,7 @@ async def pause_queue(
     result = await session.execute(
         select(Queue)
         .options(
+            joinedload(Queue.project),
             joinedload(Queue.retry_policy),
         )
         .where(Queue.id == queue.id)
@@ -425,6 +431,7 @@ async def resume_queue(
     result = await session.execute(
         select(Queue)
         .options(
+            joinedload(Queue.project),
             joinedload(Queue.retry_policy),
         )
         .where(Queue.id == queue.id)

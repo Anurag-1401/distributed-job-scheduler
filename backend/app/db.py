@@ -25,8 +25,8 @@ def get_engine() -> AsyncEngine:
         echo=False,
 
         # Keep the application's pool small.
-        pool_size=3,
-        max_overflow=0,
+        pool_size=10,
+        max_overflow=10,
 
         pool_pre_ping=True,
         pool_recycle=1800,

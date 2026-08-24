@@ -103,7 +103,7 @@ export function ProjectDetailPage() {
           <label htmlFor="description">Description</label>
           <textarea id="description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
-        <p className="muted">Organization: {project.organization_id}</p>
+        <p className="muted">Organization: {project.organization_name} - {project.organization_id}</p>
         <button className="btn" type="submit">
           Save
         </button>

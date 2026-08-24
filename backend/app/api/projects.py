@@ -71,6 +71,7 @@ async def project_payload(
     return {
         "id": project.id,
         "organization_id": project.organization_id,
+        "organization_name": project.organization.name if project.organization else None,
         "name": project.name,
         "slug": project.slug,
         "description": project.description,

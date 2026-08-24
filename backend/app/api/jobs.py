@@ -91,16 +91,34 @@ async def accessible_job(
 
     return job
 
-
 async def serialize_job(job: Job, session: AsyncSession) -> dict:
-    dlq = await session.scalar(select(DeadLetterJob).where(DeadLetterJob.job_id == job.id))
+    dlq = await session.scalar(
+        select(DeadLetterJob).where(
+            DeadLetterJob.job_id == job.id
+        )
+    )
+
     return {
-        "id": job.id, "queue_id": job.queue_id, "task_type": job.task_type, "job_type": job.job_type, "type": job.job_type,
-        "payload": job.payload, "priority": job.priority, "state": job.state, "status": job.state,
-        "scheduled_at": job.scheduled_at, "available_at": job.available_at, "attempts": job.attempts,
-        "worker_id": job.worker_id, "last_error": job.last_error, "created_at": job.created_at,
-        "started_at": job.started_at, "completed_at": job.completed_at,
-        "queue_name": job.queue.name if job.queue else None, "dead_letter_id": dlq.id if dlq else None,
+        "id": job.id,
+        "queue_id": job.queue_id,
+        "task_type": job.task_type,
+        "job_type": job.job_type,
+        "type": job.job_type,
+        "payload": job.payload,
+        "priority": job.priority,
+        "state": job.state,
+        "status": job.state,
+        "scheduled_at": job.scheduled_at,
+        "available_at": job.available_at,
+        "attempts": job.attempts,
+        "claimed_at": job.claimed_at,
+        "worker_id": job.worker_id,
+        "last_error": job.last_error,
+        "created_at": job.created_at,
+        "started_at": job.started_at,
+        "completed_at": job.completed_at,
+        "queue_name": job.queue.name if job.queue else None,
+        "dead_letter_id": dlq.id if dlq else None,
     }
 
 

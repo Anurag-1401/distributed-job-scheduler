@@ -150,6 +150,7 @@ class JobRead(BaseModel):
     status: JobState
     scheduled_at: datetime | None
     available_at: datetime
+    claimed_at: datetime | None
     attempts: int
     worker_id: UUID | None
     last_error: str | None

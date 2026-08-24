@@ -31,6 +31,8 @@ export function QueuesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
+    const [saving, setSaving] = useState(false);
+
 
   const load = useCallback(async () => {
     try {
@@ -53,6 +55,7 @@ export function QueuesPage() {
 
   async function handleCreate(event) {
     event.preventDefault();
+        setSaving(true);
     try {
       await createQueue({
         project_id: form.project_id,
@@ -71,6 +74,7 @@ export function QueuesPage() {
       load();
     } catch (err) {
       setError(getErrorMessage(err));
+      setSaving(false);
     }
   }
 
@@ -133,8 +137,8 @@ export function QueuesPage() {
           <div className="field"><label htmlFor="max_delay_seconds">Max delay (seconds)</label><input id="max_delay_seconds" type="number" min="0" value={form.max_delay_seconds} onChange={(e) => setForm({ ...form, max_delay_seconds: e.target.value })} /></div>
           <label className="checkbox-field"><input type="checkbox" checked={form.jitter} onChange={(e) => setForm({ ...form, jitter: e.target.checked })} /> Enable retry jitter</label>
         </div>
-        <button className="btn" type="submit">
-          Create queue
+        <button className="btn" type="submit" disabled={saving}>
+          {saving ? `Creating…` : `Create queue`}
         </button>
       </form>
       {error ? <ErrorState>{error}</ErrorState> : null}
