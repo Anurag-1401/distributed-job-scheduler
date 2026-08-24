@@ -7,7 +7,7 @@ A production-inspired distributed job scheduler built with **Python + FastAPI + 
 The project intentionally runs the complete application with **one Python/FastAPI process**:
 
 ```text
-python run.py
+python -m run
      |
      +--> Alembic migrations -> Supabase PostgreSQL
      |
@@ -79,7 +79,7 @@ For Supabase, SSL is enabled by default. If you use a pooler URL, keep the compl
 ### 4. Start everything
 
 ```bash
-python run.py
+python -m run
 ```
 
 This single command:
