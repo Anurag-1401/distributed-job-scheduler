@@ -4,19 +4,9 @@
 
 Authenticated users manage organizations, projects, and queues, then submit immediate, delayed, scheduled, cron, and batch jobs. Multiple worker processes claim and execute jobs without duplicate claims. PostgreSQL is the source of truth for persistent job state.
 
-## Component diagram
+## Architecture Overview
 
-```mermaid
-flowchart LR
-  Client --> API
-  API --> Postgres[(PostgreSQL)]
-  API --> Redis[(Redis)]
-  Worker --> Postgres
-  Worker --> Redis
-  Scheduler --> Postgres
-  Recoverer --> Postgres
-  Recoverer --> Redis
-```
+![Architecture Diagram](./diagrams/architecture.png)
 
 | Process | Responsibility |
 | --- | --- |
