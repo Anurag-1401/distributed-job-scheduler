@@ -64,3 +64,8 @@ app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(workers.router, prefix="/api/v1")
 app.include_router(dlq.router, prefix="/api/v1")
 app.include_router(metrics.router, prefix="/api/v1")
+
+
+@app.get('/')
+def index():
+    return {"message": "Welcome to Distributed Job Scheduler"}
