@@ -17,10 +17,10 @@ The system provides a centralized scheduler and monitoring dashboard with distri
 ## API Documentation
 
 ### Swagger UI
-[Open API Documentation](https://distributed-job-scheduler-57j8.onrender.com/api/docs)
+[Open API Documentation](https://distributed-job-scheduler-57j8.onrender.com/docs)
 
 ### ReDoc
-[Open ReDoc Documentation](https://distributed-job-scheduler-57j8.onrender.com/api/redoc)
+[Open ReDoc Documentation](https://distributed-job-scheduler-57j8.onrender.com/redoc)
 
 ---
 
