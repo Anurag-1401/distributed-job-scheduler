@@ -8,9 +8,21 @@ The system provides a centralized scheduler and monitoring dashboard with distri
 
 ## Live Application
 
-Frontend: [DEPLOYED_FRONTEND_URL](https://distributed-job-scheduler-pi.vercel.app/login?next=%2F)
+- Frontend: [DEPLOYED_FRONTEND_URL](https://distributed-job-scheduler-pi.vercel.app)
+- Backend: [DEPLOYED_BACKEND_URL](https://distributed-job-scheduler-57j8.onrender.com)
 
-API Documentation: [Project Related Docs](https://github.com/Anurag-1401/distributed-job-scheduler/tree/main/docs)
+- Documentation: [Project Related Docs](https://github.com/Anurag-1401/distributed-job-scheduler/tree/main/docs)
+
+
+## API Documentation
+
+### Swagger UI
+[Open API Documentation](https://distributed-job-scheduler-57j8.onrender.com/api/docs)
+
+### ReDoc
+[Open ReDoc Documentation](https://distributed-job-scheduler-57j8.onrender.com/api/redoc)
+
+---
 
 ## Key Features
 
