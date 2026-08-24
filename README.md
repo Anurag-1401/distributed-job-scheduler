@@ -10,7 +10,7 @@ The system provides a centralized scheduler and monitoring dashboard with distri
 
 Frontend: [DEPLOYED_FRONTEND_URL](https://distributed-job-scheduler-pi.vercel.app/login?next=%2F)
 
-API Documentation: PASTE_YOUR_DEPLOYED_BACKEND_URL_HERE/api/docs
+API Documentation: [Project Related Docs](https://github.com/Anurag-1401/distributed-job-scheduler/tree/main/docs)
 
 ## Key Features
 
@@ -96,6 +96,41 @@ CREATED
 - Delayed — executed after a specified delay
 - Scheduled — executed at a specified date and time
 - Cron — repeatedly generated according to a Cron expression and timezone
+- Batch — creates and schedules multiple jobs as a single batch request
+
+  ### Batch
+
+Creates multiple jobs through a single API request.
+
+Example:
+
+```json
+[
+  {
+    "task": "echo",
+    "message": "job A"
+  },
+  {
+    "task": "echo",
+    "message": "job B"
+  }
+]
+```
+
+## Job States
+
+- QUEUED
+- SCHEDULED
+- CLAIMED
+- RUNNING
+- COMPLETED
+- FAILED
+- RETRYING
+- DEAD_LETTER
+- CANCELLED
+
+  
+---
 
 ## Worker System
 
@@ -110,6 +145,30 @@ Workers independently register with the backend and continuously:
 7. Report completion or failure
 8. Participate in abandoned-job recovery
 
+
+## Worker Lifecycle
+
+```text
+START
+  ↓
+REGISTER
+  ↓
+HEARTBEAT
+  ↓
+POLL
+  ↓
+CLAIM
+  ↓
+EXECUTE
+  ↓
+SUCCESS / FAILURE
+  ↓
+REPORT RESULT
+  ↓
+POLL AGAIN
+
+```
+
 ## Real-Time Updates
 
 The frontend receives job state changes through WebSockets.
@@ -121,10 +180,18 @@ The frontend receives job state changes through WebSockets.
 This allows job status and execution information to be reflected in the dashboard without manual page refreshes.
 
 ## Technology Stack
-- Frontend:VITE
-- Backend:FastApi
-- ORMSQLAlchemy
-- Database:PostgreSQL
+
+| Layer | Technology |
+|---|---|
+| Frontend | React + Vite |
+| Backend | FastAPI |
+| ORM | SQLAlchemy |
+| Database | PostgreSQL |
+| Cache / Coordination | Redis |
+| Authentication | JWT |
+| Migrations | Alembic |
+| Testing | Pytest + Vitest |
+| Real-time | WebSocket |
 
 ---
 
@@ -135,15 +202,29 @@ distributed-job-scheduler/
 ├── backend/
 │   ├── app/
 │   ├── alembic/
+│   ├── docs/
+│   ├── scripts/
 │   ├── tests/
-│   ├── requirements.txt
-│   └── README.md
+│   ├── run.py
+│   ├── scheduler.py
+│   ├── worker.py
+│   ├── alembic.ini
+│   ├── pyproject.toml
+│   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
 │   ├── public/
 │   ├── package.json
-│   └── README.md
+│   └── ...
+│
+├── docs/
+│   ├── architecture.md
+│   ├── database-design.md
+│   ├── design-decisions.md
+│   ├── api.md
+│   ├── testing.md
+│   └── diagrams/
 │
 └── README.md
 
@@ -219,10 +300,6 @@ Local ReDoc documentation:
 
 http://localhost:8000/api/redoc
 
-The deployed API documentation is available at:
-
-PASTE_YOUR_DEPLOYED_BACKEND_URL_HERE/api/docs
-
 ---
 
 ## Production Deployment
@@ -256,5 +333,15 @@ Production deployment requires:
 - Database migrations
 
 Sensitive credentials must be stored as deployment environment variables and must not be committed to the repository.
+
+
+---
+
+## Known Limitations
+
+- Workers currently execute only the task types registered by the worker runtime.
+- Arbitrary user-provided Python code is never executed.
+- Redis is used for runtime coordination rather than durable job persistence.
+- Production deployment requires externally managed PostgreSQL and Redis instances.
 
 ---
