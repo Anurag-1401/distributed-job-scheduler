@@ -1,334 +1,109 @@
-Distributed Job Scheduler
+# Distributed Job Scheduler
 
-A full-stack distributed job scheduling and execution platform for creating, scheduling, executing, monitoring, and recovering background jobs across multiple workers.
+A full-stack distributed job scheduling and execution platform designed to reliably schedule, prioritize, execute, monitor, and recover background jobs across multiple workers.
 
-The system provides a centralized backend for job scheduling and management, distributed worker processes for execution, PostgreSQL for persistent storage, Redis for runtime coordination, and a React dashboard for monitoring jobs and system activity in real time.
+## Overview
 
-\---
+The system provides a centralized scheduler and monitoring dashboard with distributed workers responsible for executing jobs. It supports immediate, delayed, scheduled, and Cron-based jobs with priority handling, retries, worker health monitoring, execution history, logs, metrics, and real-time WebSocket updates.
 
-Project Description
+## Key Features
 
-Distributed Job Scheduler demonstrates a reliable distributed background job processing system.
+- Immediate, delayed, scheduled, and Cron jobs
+- Priority-based job scheduling
+- Positive priority values with lower value = higher priority
+- Queue-based job management
+- Multiple distributed workers
+- Configurable worker concurrency
+- Worker registration and heartbeat monitoring
+- Atomic job claiming
+- Job execution tracking
+- Retry policies
+- Abandoned-job recovery
+- Job lease management
+- Idempotency support
+- Execution history
+- Job logs
+- Real-time WebSocket updates
+- Scheduler and worker metrics
+- REST API
+- Interactive React dashboard
+- PostgreSQL persistence
+- Redis-based runtime coordination
 
-The platform supports immediate, delayed, scheduled, and Cron-based jobs. Jobs can be assigned priorities, executed concurrently by multiple workers, retried after failures, and recovered when a worker becomes unavailable.
+## Architecture
 
-The dashboard provides job lifecycle visualization, execution history, logs, worker information, queue management, and system metrics. WebSockets provide real-time job status updates without requiring manual page refreshes.
+                         ┌──────────────────────┐
+                         │    React Frontend    │
+                         │      Dashboard       │
+                         └──────────┬───────────┘
+                                    │
+                              REST / WebSocket
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │    FastAPI Backend   │
+                         │   API + Scheduler    │
+                         └───────┬──────┬───────┘
+                                 │      │
+                    ┌────────────┘      └────────────┐
+                    ▼                                ▼
+             ┌──────────────┐                 ┌──────────────┐
+             │  PostgreSQL  │                 │    Redis     │
+             │  Database    │                 │    Runtime   │
+             └──────────────┘                 └──────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────┐
+                    │   Distributed Workers   │
+                    │ Worker 1 ... Worker N   │
+                    └─────────────────────────┘
 
-\---
+---
 
-Key Features
-
-Immediate, delayed, scheduled, and Cron-based jobs
-
-Timezone-aware Cron scheduling
-
-Priority-based scheduling
-
-Queue-based job management
-
-Distributed worker execution
-
-Configurable worker concurrency
-
-Worker registration and health monitoring
-
-Worker heartbeat mechanism
-
-Atomic job claiming
-
-Job lease management
-
-Retry policies
-
-Abandoned-job recovery
-
-Idempotency support
-
-Job execution history and logs
-
-Job lifecycle tracking
-
-Scheduler and worker monitoring
-
-System metrics
-
-REST API
-
-Real-time WebSocket updates
-
-React monitoring dashboard
-
-PostgreSQL persistence
-
-Redis runtime coordination
-
-\---
-
-System Architecture
-
-\`\`\`text
-
-React Frontend
-
-|
-
-REST / WebSocket
-
-|
-
-v
-
-FastAPI Backend
-
-/ \\
-
-/ \\
-
-v v
-
-PostgreSQL Redis
-
-Persistence Runtime/Queue
-
-|
-
-v
-
-Distributed Workers
-
-Worker 1 ... Worker N
-
-\`\`\`
-
-The frontend communicates with the FastAPI backend through REST APIs and WebSockets.
-
-The backend manages job scheduling, queues, workers, execution state, persistence, recovery, and monitoring.
-
-PostgreSQL stores persistent application data including jobs, queues, workers, executions, schedules, and logs.
-
-Redis is used for runtime coordination and production deployment.
-
-Multiple worker processes can operate independently and execute jobs concurrently.
-
-\---
-
-Job Lifecycle
-
-\`\`\`text
+## Job Lifecycle
 
 CREATED
-
-|
-
-+----> SCHEDULED ----> QUEUED
-
-|
-
-+----> QUEUED
-
-|
-
-v
-
-CLAIMED
-
-|
-
-v
-
-RUNNING
-
-/ \\
-
-v v
-
-COMPLETED FAILED
-
-|
-
-v
-
-RETRY
-
-|
-
-v
-
-QUEUED
-
-\`\`\`
-
-\---
-
-Supported Job Types
-
-Immediate
-
-The job becomes available for execution immediately after creation.
-
-Delayed
-
-The job becomes available after a specified delay.
-
-Scheduled
-
-The job is executed at a specified date and time.
-
-Cron
-
-A recurring schedule is created using a Cron expression and timezone. The scheduler generates executable jobs according to the configured schedule.
-
-\---
-
-Priority Scheduling
-
-Jobs support positive integer priorities. Lower numeric values represent higher priority.
-
-\`\`\`text
-
-1 Highest Priority
-
-2
-
-3
-
-4
-
-5 Lower Priority
-
-\`\`\`
-
-\---
-
-Distributed Worker System
-
-Workers are independent execution processes.
-
-Each worker:
-
-Registers with the backend.
-
-Becomes available for job execution.
-
-Sends periodic heartbeats.
-
-Polls for available jobs.
-
-Claims eligible jobs.
-
-Executes tasks.
-
-Records execution results.
-
-Updates job state.
-
-Participates in abandoned-job recovery.
-
-Worker configuration includes worker ID, worker key, status, maximum concurrency, current job count, and last heartbeat timestamp.
-
-Multiple workers can operate simultaneously, allowing the system to distribute workload across execution processes.
-
-\---
-
-Reliability and Recovery
-
-Job Claiming
-
-Workers claim jobs before execution so that the same job is not normally processed simultaneously by multiple workers.
-
-Worker Heartbeats
-
-Workers periodically update heartbeat information so the system can determine whether a worker is active.
-
-Job Leases
-
-Jobs can be protected by execution leases. If a worker stops processing a job and the lease expires, the job can be considered abandoned.
-
-Abandoned Job Recovery
-
-The recovery process identifies abandoned jobs and makes them available for execution again according to configured recovery and retry rules.
-
-Retry Handling
-
-Failed jobs can be retried according to their configured retry policy.
-
-Idempotency
-
-Idempotency keys prevent duplicate job creation when the same request is submitted more than once.
-
-\---
-
-Real-Time Updates
-
-The backend exposes the following WebSocket endpoint:
-
-\`\`\`text
-
-/api/v1/jobs/ws
-
-\`\`\`
-
-Supported events include:
-
-\`\`\`text
-
-job.created
-
-job.updated
-
-\`\`\`
-
-The frontend listens for these events and updates the dashboard in real time.
-
-\---
-
-Monitoring
-
-The dashboard provides visibility into:
-
-Job state
-
-Job ID
-
-Queue
-
-Priority
-
-Attempts
-
-Worker
-
-Created time
-
-Scheduled time
-
-Claimed time
-
-Retry information
-
-Job lifecycle
-
-Payload
-
-Execution history
-
-Execution results
-
-Job logs
-
-Worker status
-
-Worker heartbeat
-
-Worker concurrency
-
-Scheduler activity
-
-System metrics
-
-\---
-
-Technology Stack
+   │
+   ├──► SCHEDULED ──► QUEUED
+   │
+   └──► QUEUED
+          │
+          ▼
+        CLAIMED
+          │
+          ▼
+        RUNNING
+       /       \
+      ▼         ▼
+ COMPLETED     FAILED
+                 │
+                 ▼
+               RETRY
+                 │
+                 └────► QUEUED
+
+---
+                 
+
+## Supported Job Types
+ -- Immediate — executed as soon as a worker is available
+ -- Delayed — executed after a specified delay
+ -- Scheduled — executed at a specified date and time
+ -- Cron — repeatedly generated according to a Cron expression and timezone
+ -- Worker System
+
+-> Workers independently register with the backend and continuously:
+
+Register with the scheduler
+Maintain an online status
+Send heartbeats
+Poll for available jobs
+Claim jobs
+Execute tasks
+Report completion or failure
+Participate in abandoned-job recovery
+
+## Technology Stack
 
 LayerTechnology
 
@@ -354,270 +129,63 @@ Real-Time CommunicationWebSockets
 
 Testingpytest
 
-\---
-
-Repository Structure
-
-\`\`\`text
+## Project Structure
 
 distributed-job-scheduler/
-
-|
-
+│
 ├── backend/
-
-| ├── app/
-
-| ├── alembic/
-
-| ├── tests/
-
-| ├── requirements.txt
-
-| └── README.md
-
-|
-
+│   ├── app/
+│   ├── alembic/
+│   ├── tests/
+│   ├── requirements.txt
+│   └── README.md
+│
 ├── frontend/
-
-| ├── src/
-
-| ├── public/
-
-| ├── package.json
-
-| └── README.md
-
-|
-
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── README.md
+│
 └── README.md
 
-\`\`\`
+---
 
-\---
-
-Backend Setup
-
-Prerequisites
-
-Python 3.11+
-
-PostgreSQL
-
-Redis or Redis-compatible service
-
-pip
-
-Installation
-
-\`\`\`bash
-
+-- Backend Setup
 cd backend
-
 python -m venv .venv
 
-\`\`\`
-
 Windows:
-
-\`\`\`bash
-
-.venv\\Scripts\\activate
-
-\`\`\`
+.venv\Scripts\activate
 
 Install dependencies:
-
-\`\`\`bash
-
 pip install -r requirements.txt
-
-\`\`\`
-
-Run database migrations:
-
-\`\`\`bash
-
+Run migrations:
 python -m alembic upgrade head
-
-\`\`\`
 
 Start the backend:
-
-\`\`\`bash
-
 python -m run
 
-\`\`\`
-
-\---
-
-Frontend Setup
-
-Prerequisites
-
-Node.js
-
-npm
-
-Installation
-
-\`\`\`bash
-
+-- Frontend Setup
 cd frontend
-
 npm install
-
-\`\`\`
-
-Start the development server:
-
-\`\`\`bash
-
 npm run dev
 
-\`\`\`
-
-Create a production build:
-
-\`\`\`bash
-
+Production build:
 npm run build
 
-\`\`\`
-
-\---
-
-Environment Configuration
-
-Backend configuration is provided through environment variables.
-
+-- Environment Configuration
+The backend requires environment variables for database, Redis, authentication, scheduler, worker, heartbeat, lease, and concurrency configuration.
 Example:
 
-\`\`\`env
+DATABASE_URL=postgresql+asyncpg://...
+REDIS_URL=redis://...
+SECRET_KEY=...
 
-DATABASE\_URL=postgresql+asyncpg://user:password@host:5432/database
+SCHEDULER_INTERVAL_SECONDS=1
+POLL_INTERVAL_SECONDS=1
+HEARTBEAT_INTERVAL_SECONDS=5
+LEASE_TIMEOUT_SECONDS=30
+MAX_CONCURRENCY=5
 
-REDIS\_URL=redis://host:6379
-
-SECRET\_KEY=your-secret-key
-
-SCHEDULER\_INTERVAL\_SECONDS=1
-
-POLL\_INTERVAL\_SECONDS=1
-
-HEARTBEAT\_INTERVAL\_SECONDS=5
-
-LEASE\_TIMEOUT\_SECONDS=30
-
-MAX\_CONCURRENCY=5
-
-\`\`\`
-
-Frontend configuration:
-
-\`\`\`env
-
-VITE\_API\_BASE\_URL=http://localhost:8000
-
-\`\`\`
-
-Production deployments should use the deployed PostgreSQL and Redis service URLs instead of localhost services.
-
-\---
-
-API Documentation
-
-When the backend is running:
-
-\`\`\`text
-
-http://localhost:8000/api/docs
-
-\`\`\`
-
-Alternative documentation:
-
-\`\`\`text
-
-http://localhost:8000/api/redoc
-
-\`\`\`
-
-\---
-
-Database Migrations
-
-Apply existing migrations:
-
-\`\`\`bash
-
-python -m alembic upgrade head
-
-\`\`\`
-
-Create a new migration:
-
-\`\`\`bash
-
-python -m alembic revision --autogenerate -m "description"
-
-\`\`\`
-
-\---
-
-Testing
-
-Run backend tests:
-
-\`\`\`bash
-
-cd backend
-
-pytest
-
-\`\`\`
-
-\---
-
-Production Deployment
-
-The application can be deployed using separate services for the frontend, backend, PostgreSQL, Redis, and workers.
-
-\`\`\`text
-
-Frontend
-
-|
-
-v
-
-Backend API
-
-|
-
-+---- PostgreSQL
-
-|
-
-+---- Redis
-
-|
-
-+---- Worker 1
-
-+---- Worker 2
-
-+---- Worker N
-
-\`\`\`
-
-Production deployment requires PostgreSQL, Redis or a Redis-compatible service, the backend service, one or more worker processes, frontend hosting, environment configuration, and database migrations.
-
-Sensitive credentials must be stored in deployment environment variables and must not be committed to the repository.
-
-\---
-
-Project Objective
-
-The objective of this project is to implement a reliable distributed job scheduling platform capable of scheduling, prioritizing, executing, monitoring, retrying, and recovering background jobs across multiple workers while maintaining persistent execution data and providing real-time system visibility.
+-- The frontend uses:
+VITE_API_BASE_URL=http://localhost:8000
