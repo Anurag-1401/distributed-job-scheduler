@@ -4,22 +4,9 @@ PostgreSQL 16+. UUID primary keys (`uuidv7` if available, else `gen_random_uuid(
 
 ## ER overview
 
-```mermaid
-erDiagram
-  users ||--o{ organization_members : membership
-  organizations ||--o{ organization_members : members
-  organizations ||--o{ projects : owns
-  projects ||--o{ queues : has
-  retry_policies ||--o{ queues : default
-  queues ||--o{ jobs : contains
-  jobs ||--o{ job_executions : attempts
-  job_executions ||--o{ job_logs : logs
-  jobs ||--o| scheduled_jobs : schedule
-  jobs ||--o| dead_letter_jobs : dlq
-  jobs }o--o| batches : batch
-  workers ||--o{ worker_heartbeats : beats
-  workers ||--o{ jobs : claimed
-```
+## ER Diagram
+
+![ER Diagram](./diagrams/er-diagram.png)
 
 ## Tables
 
