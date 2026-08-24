@@ -1,3 +1,4 @@
+from app.websocket import publish_job_update
 import asyncio
 import logging
 import uuid
@@ -204,6 +205,11 @@ class WorkerProcess:
 
                 await session.commit()
 
+                await publish_job_update(
+                    job,
+                    event="job.updated",
+                )
+
                 execution_id = execution.id
 
             # -------------------------------------------------
@@ -279,6 +285,11 @@ class WorkerProcess:
 
                     await session.commit()
 
+                    await publish_job_update(
+    job,
+    event="job.updated",
+)
+
                     logger.info(
                         "EXECUTE COMPLETE | job=%s | worker=%s",
                         job_id,
@@ -343,6 +354,11 @@ class WorkerProcess:
                         )
 
                         await session.commit()
+
+                        await publish_job_update(
+    job,
+    event="job.updated",
+)
 
     # ---------------------------------------------------------
     # POLL

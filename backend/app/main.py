@@ -11,7 +11,8 @@ from app.core.config import get_settings
 from app.exceptions import AppError
 from app.runtime import runtime
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logging.basicConfig(level=logging.INFO, 
+format="%(asctime)s %(levelname)s %(name)s %(message)s")
 settings = get_settings()
 
 
@@ -49,7 +50,9 @@ async def request_context(request: Request, call_next):
 
 @app.exception_handler(AppError)
 async def app_error_handler(_: Request, exc: AppError):
-    return JSONResponse(status_code=exc.status_code, content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}})
+    return JSONResponse(status_code=exc.status_code, 
+    content={"error": {"code": exc.code, 
+    "message": exc.message, "details": exc.details}})
 
 
 app.include_router(health.router)

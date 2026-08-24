@@ -9,9 +9,14 @@ import { getErrorMessage } from "../utils/errors";
 import { unwrapList, formatDate, formatDuration, shortId } from "../utils/format";
 import { useDebounce } from "../hooks/useDebounce";
 import { usePolling } from "../hooks/usePolling";
+import { useJobWebSocket } from "../hooks/useJobWebSocket";
 import { useSettings } from "../context/SettingsContext";
 
-const STATUSES = ["", "SCHEDULED", "QUEUED", "CLAIMED", "RUNNING", "COMPLETED", "FAILED", "RETRYING", "CANCELLED", "DEAD_LETTER"];
+const STATUSES = ["", "SCHEDULED", 
+        "QUEUED", "CLAIMED", 
+        "RUNNING", "COMPLETED", 
+        "FAILED", "RETRYING", 
+        "CANCELLED", "DEAD_LETTER"];
 
 export function JobsPage() {
   const { pollIntervalMs } = useSettings();
@@ -45,7 +50,31 @@ export function JobsPage() {
     }
   }, [filters, debouncedSearch]);
 
-  usePolling(load, pollIntervalMs, true);
+  usePolling(load, 30000, true);
+
+  useJobWebSocket((updatedJob) => {
+  setList((prev) => {
+    const exists = prev.items.some(
+      (job) => job.id === updatedJob.id,
+    );
+
+    if (!exists) {
+      return prev;
+    }
+
+    return {
+      ...prev,
+      items: prev.items.map((job) =>
+        job.id === updatedJob.id
+          ? {
+              ...job,
+              ...updatedJob,
+            }
+          : job,
+      ),
+    };
+  });
+});
 
   function update(key, value) {
     setFilters((prev) => ({ ...prev, page: 1, [key]: value }));
@@ -91,11 +120,13 @@ export function JobsPage() {
         </div>
         <div className="field">
           <label htmlFor="created_after">Created after</label>
-          <input id="created_after" type="datetime-local" value={filters.created_after} onChange={(e) => update("created_after", e.target.value)} />
+          <input id="created_after" type="datetime-local" value={filters.created_after} onChange={(e) => 
+            update("created_after", e.target.value)} />
         </div>
         <div className="field">
           <label htmlFor="created_before">Created before</label>
-          <input id="created_before" type="datetime-local" value={filters.created_before} onChange={(e) => update("created_before", e.target.value)} />
+          <input id="created_before" type="datetime-local" value={filters.created_before} onChange={(e) => 
+            update("created_before", e.target.value)} />
         </div>
         <div className="field">
           <label htmlFor="sort">Sort</label>
@@ -159,7 +190,8 @@ export function JobsPage() {
           </table>
         </div>
       ) : null}
-      <Pagination page={filters.page} limit={filters.limit} total={list.total} onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))} />
+      <Pagination page={filters.page} limit={filters.limit} total={list.total} 
+      onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))} />
     </div>
   );
 }

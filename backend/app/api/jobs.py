@@ -1,9 +1,10 @@
+from app.services import jobs
 from datetime import datetime, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from croniter import croniter
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -13,6 +14,8 @@ from app.dependencies import get_current_user
 from app.models import DeadLetterJob, Job, JobExecution, JobLog, JobState, JobType, OrganizationMember, Project, Queue, User
 from app.schemas import BatchJobCreate, ExecutionRead, JobCreate, JobRead, LogRead, Page
 from app.services.jobs import add_log, create_job
+from app.websocket import job_ws_manager
+from app.websocket import publish_job_update
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -102,34 +105,140 @@ async def serialize_job(job: Job, session: AsyncSession) -> dict:
 
 
 @router.post("", response_model=JobRead, status_code=201)
-async def enqueue_job(data: JobCreate, idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"), user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    queue = await accessible_queue(data.queue_id, user, session)
+async def enqueue_job(
+    data: JobCreate,
+    idempotency_key: str | None = Header(
+        default=None,
+        alias="Idempotency-Key",
+    ),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    queue = await accessible_queue(
+        data.queue_id,
+        user,
+        session,
+    )
+
     key = idempotency_key or data.idempotency_key
+
+    # ---------------------------------------------------------
+    # CRON JOB
+    # ---------------------------------------------------------
+
     if data.type == JobType.CRON:
+
         if not data.cron_expression:
-            raise HTTPException(status_code=422, detail="cron_expression is required for CRON jobs")
+            raise HTTPException(
+                status_code=422,
+                detail="cron_expression is required for CRON jobs",
+            )
+
         try:
             tz = ZoneInfo(data.timezone)
-            local_now = datetime.now(timezone.utc).astimezone(tz)
-            next_run = croniter(data.cron_expression, local_now).get_next(datetime).replace(tzinfo=tz).astimezone(timezone.utc)
+
+            local_now = datetime.now(
+                timezone.utc
+            ).astimezone(tz)
+
+            next_run = (
+                croniter(
+                    data.cron_expression,
+                    local_now,
+                )
+                .get_next(datetime)
+                .replace(tzinfo=tz)
+                .astimezone(timezone.utc)
+            )
+
         except Exception as exc:
-            raise HTTPException(status_code=422, detail=f"Invalid cron expression or timezone: {exc}") from exc
-        template = await create_job(session, queue, data.task_type, data.payload, data.priority, JobType.CRON, scheduled_at=next_run, idempotency_key=key)
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "Invalid cron expression or timezone: "
+                    f"{exc}"
+                ),
+            ) from exc
+
+        template = await create_job(
+            session,
+            queue,
+            data.task_type,
+            data.payload,
+            data.priority,
+            JobType.CRON,
+            scheduled_at=next_run,
+            idempotency_key=key,
+        )
+
         template.state = JobState.CANCELLED
         template.is_schedule_template = True
+
         from app.models import ScheduledJob
-        session.add(ScheduledJob(job_template_id=template.id, cron_expression=data.cron_expression, timezone=data.timezone, next_run_at=next_run, enabled=True))
-        add_log(session, template.id, "Cron schedule created", metadata={"cron": data.cron_expression, "timezone": data.timezone})
+
+        session.add(
+            ScheduledJob(
+                job_template_id=template.id,
+                cron_expression=data.cron_expression,
+                timezone=data.timezone,
+                next_run_at=next_run,
+                enabled=True,
+            )
+        )
+
+        add_log(
+            session,
+            template.id,
+            "Cron schedule created",
+            metadata={
+                "cron": data.cron_expression,
+                "timezone": data.timezone,
+            },
+        )
+
         await session.commit()
         await session.refresh(template)
-        return await serialize_job(template, session)
 
-    job = await create_job(session, queue, data.task_type, data.payload, data.priority, data.type, scheduled_at=data.scheduled_at, delay_seconds=data.delay_seconds, idempotency_key=key)
+        await publish_job_update(
+            template,
+            event="job.created",
+        )
+
+        return await serialize_job(
+            template,
+            session,
+        )
+
+    # ---------------------------------------------------------
+    # NORMAL / IMMEDIATE / SCHEDULED / DELAYED JOB
+    # ---------------------------------------------------------
+
+    job = await create_job(
+        session,
+        queue,
+        data.task_type,
+        data.payload,
+        data.priority,
+        data.type,
+        scheduled_at=data.scheduled_at,
+        delay_seconds=data.delay_seconds,
+        idempotency_key=key,
+    )
+
     await session.commit()
     await session.refresh(job)
-    job.queue = queue
-    return await serialize_job(job, session)
 
+    job.queue = queue
+
+    await publish_job_update(
+        job,
+        event="job.created",
+    )
+
+    return await serialize_job(
+        job,
+        session,
+    )
 
 @router.post("/batch", response_model=JobRead, status_code=201)
 async def enqueue_batch(data: BatchJobCreate, idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"), user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
@@ -297,6 +406,10 @@ async def retry_job(job_id: UUID, user: User = Depends(get_current_user), sessio
     add_log(session, job.id, "Job manually retried")
     await session.commit()
     await session.refresh(job)
+    await publish_job_update(
+        job,
+        event="job.updated",
+    )
     return await serialize_job(job, session)
 
 
@@ -309,4 +422,23 @@ async def cancel_job(job_id: UUID, user: User = Depends(get_current_user), sessi
     job.worker_id = None
     add_log(session, job.id, "Job cancelled", level="WARNING")
     await session.commit()
+    await session.refresh(job)
+
+    await publish_job_update(
+        job,
+        event="job.updated",
+    )
     return await serialize_job(job, session)
+
+
+@router.websocket("/ws")
+async def jobs_websocket(websocket: WebSocket) -> None:
+    await job_ws_manager.connect(websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        job_ws_manager.disconnect(websocket)
+    except Exception:
+        job_ws_manager.disconnect(websocket)
