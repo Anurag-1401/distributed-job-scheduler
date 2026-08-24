@@ -216,9 +216,12 @@ class WorkerProcess:
                 job.task_type,
             )
 
+            task_payload = dict(job.payload or {})
+            task_payload["_attempt"] = getattr(job, "attempt", 1)
+
             result = await execute_task(
                 job.task_type,
-                job.payload,
+                task_payload,
             )
 
             logger.info(
