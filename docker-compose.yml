@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: distributed-job-scheduler-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: scheduler
+      POSTGRES_USER: scheduler
+      POSTGRES_PASSWORD: scheduler_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scheduler -d scheduler"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: distributed-job-scheduler-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: distributed-job-scheduler-backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: Distributed Job Scheduler
+      ENVIRONMENT: docker
+
+      DATABASE_URL: postgresql+asyncpg://scheduler:scheduler_password@postgres:5432/scheduler
+      DATABASE_SSL: "false"
+
+      REDIS_URL: redis://redis:6379
+
+      JWT_SECRET: change-this-development-secret
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_MINUTES: 60
+
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173
+
+      WORKER_COUNT: 3
+      MAX_CONCURRENCY: 10
+
+      POLL_INTERVAL_SECONDS: 0.5
+      HEARTBEAT_INTERVAL_SECONDS: 5
+      LEASE_TIMEOUT_SECONDS: 120
+
+      SCHEDULER_INTERVAL_SECONDS: 1
+      SCHEDULER_LOCK_TTL_SECONDS: 5
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: distributed-job-scheduler-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
+  redis_data:
