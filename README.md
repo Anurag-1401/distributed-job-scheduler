@@ -250,6 +250,7 @@ Prerequisites:
 - Redis or Redis-compatible service
 - pip
 
+```bash
 - cd backend
 python -m venv .venv
 
@@ -261,15 +262,20 @@ python -m venv .venv
 
 - Start the backend:python -m run
 
+```
+
 ---
 
 ## Frontend Setup
 
+```bash
 - cd frontend
 npm install
 npm run dev
 
 -Production build:npm run build
+
+```
 
 ---
 
@@ -278,7 +284,7 @@ npm run dev
 The backend requires environment variables for database, Redis, authentication, scheduler, worker, heartbeat, lease, and concurrency configuration.
 
 Example:
-
+```bash
 - DATABASE_URL=postgresql+asyncpg://user:password@host:5432/database
 - REDIS_URL=redis://host:6379
 - SECRET_KEY=your-secret-key
@@ -292,6 +298,7 @@ Example:
 
 For production, VITE_API_BASE_URL should point to the deployed backend API.
 
+```
 ---
 
 ## Docker Setup
