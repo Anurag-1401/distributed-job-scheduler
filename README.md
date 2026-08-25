@@ -294,6 +294,37 @@ For production, VITE_API_BASE_URL should point to the deployed backend API.
 
 ---
 
+## Docker Setup
+
+The Distributed Job Scheduler can be run completely using Docker Compose. Docker starts the frontend, backend, PostgreSQL database, and Redis services together.
+
+### Prerequisites
+
+Make sure you have installed:
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Docker Compose (included with Docker Desktop)
+
+Verify the installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+```bash
+1. Clone the Repository
+git clone <repository-url>
+cd distributed-job-scheduler
+
+2. Start the Application
+Build and start all services:
+docker compose up --build
+
+3. Stop the Application
+docker compose down
+```
+
 ## Testing
 
 - Run backend tests:
